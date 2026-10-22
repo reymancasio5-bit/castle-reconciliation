@@ -1,0 +1,2 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+test('production build uses relative assets and no Cloudflare API endpoints',()=>{const html=fs.readFileSync('dist/index.html','utf8');assert.match(html,/\.\/assets\//);const js=fs.readdirSync('dist/assets').filter(x=>x.endsWith('.js')).map(x=>fs.readFileSync('dist/assets/'+x,'utf8')).join('');assert.doesNotMatch(js,/signin-with-chatgpt|cloudflare:workers|\/api\/(state|mutate|import|export)/);});

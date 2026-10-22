@@ -1,0 +1,21 @@
+<!doctype html><html><head><base target="_top"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font:16px system-ui;padding:32px;color:#18382e">
+<h2>Castle Google connection</h2><p id="status">Google authorization is ready. Return to Castle and select Connect to load your workspace.</p>
+<p>This window does not display your financial records.</p>
+<script>
+const allowedOrigin=<?!= origin ?>,nonce=<?!= nonce ?>;
+let host=null;
+if(nonce){
+ const hello=()=>window.top.postMessage({castle:true,type:'ready',nonce},allowedOrigin);
+ hello();const timer=setInterval(hello,1000);
+ window.addEventListener('message',event=>{
+  if(event.origin!==allowedOrigin||event.source!==window.top)return;
+  const m=event.data;if(!m||m.castle!==true||m.nonce!==nonce)return;
+  if(m.type==='ack'){host=event.source;clearInterval(timer);return;}
+  if(m.type!=='request'||!host||typeof m.id!=='string'||m.id.length>100)return;
+  google.script.run.withSuccessHandler(reply=>host.postMessage({castle:true,type:'reply',nonce,id:m.id,reply},allowedOrigin))
+   .withFailureHandler(error=>host.postMessage({castle:true,type:'reply',nonce,id:m.id,reply:{ok:false,error:{code:'GOOGLE_ERROR',message:error.message||'Google request failed'}}},allowedOrigin))
+   .castleRpc(m.request);
+ });
+}
+</script></body></html>
+

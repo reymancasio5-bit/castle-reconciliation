@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {validBridgeOrigin,validEnvelope} from '../lib/client/protocol';
+test('only Google HTML-service origins and matching nonces are accepted',()=>{assert.equal(validBridgeOrigin('https://a-script.googleusercontent.com'),true);for(const origin of ['https://evil.com','https://a-script.googleusercontent.com.evil.com','http://a-script.googleusercontent.com','null'])assert.equal(validBridgeOrigin(origin),false);assert.equal(validEnvelope({castle:true,nonce:'expected'},'expected'),true);assert.equal(validEnvelope({castle:true,nonce:'wrong'},'expected'),false)});

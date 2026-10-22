@@ -1,0 +1,3 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {encodeState,decodeState} from '../lib/storage';
+test('workspace storage compresses repetitive audit history and round-trips',async()=>{const s={audit:Array.from({length:10000},(_,i)=>({id:i,details:'reservation audit information '.repeat(10)}))};const encoded=await encodeState(s);assert.ok(new TextEncoder().encode(encoded).length<1800000);assert.deepEqual(await decodeState(encoded),s)});
+test('legacy JSON workspace documents remain readable',async()=>{assert.deepEqual(await decodeState('{"reservations":[]}'),{reservations:[]})});

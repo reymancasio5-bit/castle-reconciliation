@@ -1,0 +1,5 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import AccountingApp from '../app/components/AccountingApp';import '../app/globals.css';import {createService} from '../apps-script/src/service';import {initialState} from '../lib/samples';
+let state=initialState(),revision=1;state.source={kind:'google-sheets',readOnly:false,readAt:new Date().toISOString(),warnings:['SYNTHETIC LOCAL TEST ? no Google data'],timeZone:'UTC'};
+const service=createService({identity:()=> 'qa@example.test',admin:()=> 'qa@example.test',load:()=>({state,version:String(revision)}),save:(before,after)=>{state=after;revision++},lock:fn=>fn()});
+const client={read:async()=>service({kind:'read'}),mutate:async(version:string,action:any)=>service({kind:'mutate',version,action}),importRequest:async(request:any)=>service(request)};
+createRoot(document.getElementById('root')!).render(<AccountingApp initialWorkspace={service({kind:'read'})} client={client}/>);

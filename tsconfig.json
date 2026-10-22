@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "main.tsx",
+    "app/components/**/*.tsx",
+    "lib/types.ts",
+    "lib/accounting.ts",
+    "lib/validation.ts",
+    "lib/reports.ts",
+    "lib/workflows.ts",
+    "lib/properties.ts",
+    "lib/imports.ts",
+    "lib/sheet-mapping.ts",
+    "lib/rpc-contract.ts",
+    "lib/client/**/*.ts",
+    "apps-script/src/**/*.ts",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

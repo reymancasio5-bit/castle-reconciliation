@@ -10,7 +10,7 @@ export function lock<T>(fn:()=>T):T{const l=LockService.getScriptLock();if(!l.tr
 function values(sheet:any,tz:string){if(sheet.getLastRow()>20001||sheet.getLastColumn()>100)throw Error('Worksheet capacity exceeded: '+sheet.getName());return sheet.getDataRange().getValues().map((row:any[])=>row.map(v=>Object.prototype.toString.call(v)==='[object Date]'?Utilities.formatDate(v,tz,'yyyy-MM-dd'):v));}
 function json(sheet:any){const chunks=sheet.getDataRange().getValues().slice(1).map((r:any[])=>r[0]||'').join('');return JSON.parse(chunks||'[]');}
 export function snapshot(){const b=book(),tz=b.getSpreadsheetTimeZone();const tabs:any={};
- for(const name of ['Reservation Payouts','Bundle Register',...Object.values(META)]){const s=b.getSheetByName(name);if(!s)throw Error('Run setupWorkspace_ before connecting: missing '+name);tabs[name]={sheet:s,values:values(s,tz),formulas:s.getDataRange().getFormulas()};}
+ for(const name of ['Reservation Payouts','Bundle Register',...Object.values(META)]){const s=b.getSheetByName(name);if(!s)throw Error('Run setupWorkspace before connecting: missing '+name);tabs[name]={sheet:s,values:values(s,tz),formulas:s.getDataRange().getFormulas()};}
  const fingerprint=JSON.stringify(Object.entries(tabs).map(([name,t]:any)=>[name,t.values,t.formulas]));
  const version=Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,fingerprint));
  const mapped=mapSheetRows(tabs['Reservation Payouts'].values,tabs['Bundle Register'].values,{currency:props().getProperty('DEFAULT_CURRENCY')||'CAD',timeZone:tz});

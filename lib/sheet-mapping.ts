@@ -23,7 +23,7 @@ const amounts=new Set(['payout','split','sourceBundleAmount','actual','sourceAmo
 const dates=new Set(['checkin','checkout','arrival','depositDate','paymentDate']);
 const blank=(v:unknown)=>v===undefined||v===null||v==='';
 function decode(k:string,v:any):any{
- if(amounts.has(k))return blank(v)?null:money(String(v));
+ if(amounts.has(k))return blank(v)?null:money(v);
  if(dates.has(k)&&typeof v==='number')return new Date(Date.UTC(1899,11,30)+Math.floor(v)*86400000).toISOString().slice(0,10);
  if(k==='locks'){if(blank(v))return [];const parsed=JSON.parse(String(v));if(!Array.isArray(parsed)||parsed.some(x=>typeof x!=='string'))throw Error('Invalid Castle Locks');return parsed;}
  if(k==='payoutType')return ({'Full Payout to Castle':'castle','Split Payout':'split','Full Payout to Owner':'owner'} as any)[v]||v||'split';
@@ -38,7 +38,9 @@ export function readRecords(data:unknown[][],schema:Schema){const map=columnMap(
   if(Object.entries(map).some(([k,col])=>!['deleted','locks','id','payoutType','currency'].includes(k)&&col>=0&&!blank(row[col])))throw Error('Row '+(index+2)+': missing '+schema[indicator][0]);
   return [];
  }
- const result:any={sourceRow:index+2};for(const [key,col]of Object.entries(map))result[key]=decode(key,row[col]);
+ const result:any={sourceRow:index+2};for(const [key,col]of Object.entries(map)){
+  try{result[key]=decode(key,row[col]);}catch(error){throw Error((schema===reservationSchema?'Reservation Payouts':'Bundle Register')+' row '+(index+2)+', '+schema[key][0]+': '+(error instanceof Error?error.message:'Invalid value'));}
+ }
  return [result];
 });}
 export function mapSheetRows(reservations:unknown[][],banks:unknown[][],options:{currency:string;timeZone:string}){

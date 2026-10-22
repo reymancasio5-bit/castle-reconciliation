@@ -1,5 +1,19 @@
 import type {Filters} from './types';
-export function money(value:string):number{const s=String(value).trim().replace(/^\$/, '');if(!/^-?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(s))throw Error('Enter a valid amount with at most two decimal places');const n=Math.round(Number(s.replaceAll(',',''))*100);if(!Number.isSafeInteger(n)||Math.abs(n)>1e12)throw Error('Amount is outside supported range');return n}
+export function money(value:string|number):number{
+ // Sheets formulas may yield sub-cent values or floating-point residue.
+ if(typeof value==='number'){
+  if(!Number.isFinite(value))throw Error('Enter a valid amount');
+  if(Math.abs(value)<0.005)return 0;
+ }
+ const s=String(value).trim().replace(/^\((.*)\)$/, '-$1').replace(/^(-?)\$\s*/, '$1');
+ if(!/^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$/.test(s))throw Error('Enter a valid amount');
+ const negative=s.startsWith('-');
+ const [whole,fraction='']=s.replace(/^[+-]/,'').replaceAll(',','').split('.');
+ // Round decimal digits directly: 1.005 becomes 1.01, including negative adjustments.
+ const cents=Number(whole||'0')*100+Number((fraction+'00').slice(0,2))+(Number(fraction[2]||'0')>=5?1:0);
+ if(!Number.isSafeInteger(cents)||cents>1e12)throw Error('Amount is outside supported range');
+ return cents===0?0:negative?-cents:cents;
+}
 export function expected(r:{payoutType:string;payout:number|null;split:number|null}):number|null{return r.payoutType==='owner'?0:r.payoutType==='split'?r.split:r.payout}
 export function reconcile(b:{id:string;currency:string;actual:number|null;depositDate:string;sourceAmount?:number|null},rows:{bundleId:string;currency:string;payoutType:string;payout:number|null;split:number|null}[],tolerance:number){const linked=rows.filter(r=>r.bundleId===b.id);if(linked.some(r=>r.currency!==b.currency))throw Error('Bundle and reservation currencies must match');const unknown=linked.some(r=>expected(r)===null);const total=linked.reduce((s,r)=>s+(expected(r)??0),0);const eligible=linked.filter(r=>r.payoutType!=='owner');const difference=b.actual===null||unknown?null:b.actual-total;const sourceMismatch=b.sourceAmount!=null&&b.actual!==null&&Math.abs(b.sourceAmount-b.actual)>tolerance;const status=unknown?'Incomplete data':b.actual===null||!b.depositDate?'Awaiting deposit':eligible.length&&!sourceMismatch&&Math.abs(difference!)<=tolerance?'Matched':'Review';return {total:unknown?null:total,difference,status,count:linked.length,reason:sourceMismatch?'Actual bank amount differs from the known Airbnb source transfer. Verify completeness and bank reference.':unknown?'An assigned Castle payout is unknown.':!eligible.length?'No eligible Castle reservations are assigned.':''}}
 export function select<T extends {statementMonth:string;property:string;payoutType:string;checkout:string}>(rows:T[],f:Filters){return rows.filter(r=>(!f.month||r.statementMonth===f.month)&&(!f.property||r.property===f.property)&&(!f.payoutType||r.payoutType===f.payoutType)&&(!f.from||r.checkout>=f.from)&&(!f.to||r.checkout<=f.to))}

@@ -20,6 +20,8 @@ If connecting times out, verify that the /exec URL returns the Castle shared wor
 
 ## Accounting behavior
 
+Amounts with extra decimal places are accepted and rounded to the nearest cent (half-cents away from zero). Dollar prefixes, grouped thousands, and parenthesized negative amounts are supported. Original sheet amounts are preserved when unrelated fields are edited. Invalid amounts identify their source sheet, row, and column.
+
 Revenue stays per payment row; aggregate Revenue remains undefined. Repeated reservation codes, different Revenue amounts, and negative adjustments are preserved. Castle receivables use each row's Split to Castle. Source transfers are references; actual receipts require bank amount and date.
 
 Imports preview changes before saving. Ambiguous repeated payments or changed financial amounts require an explicit Payment ID. Saves enforce sheet revisions and a write lock. Deleted rows remain tombstones; new records append after them. App edits cannot overwrite formula cells. Public users can change rounding tolerance, but staff-role mutations are rejected.

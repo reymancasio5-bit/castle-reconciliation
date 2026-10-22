@@ -9,3 +9,16 @@ test('maps independent payments and never treats transfers as bank receipts',()=
 test('targeted patches preserve foreign cells, formulas, and literal text',()=>{const data=[headers,row('P1',10)];const s=mapSheetRows(data,[banks],{currency:'CAD',timeZone:'UTC'});const r={...s.reservations[0],notes:'=not a formula'};const changes=changesFor(data,[r],reservationSchema);assert.equal(changes.length,1);assert.equal(changes[0].value,'=not a formula');assert.equal(changes[0].column,headers.indexOf('Notes'));assert.equal(changesFor(data,[],reservationSchema)[0].value,'TRUE')});
 test('new payments and bundles append after tombstones and remain visible',()=>{for(const schema of [reservationSchema,bundleSchema]){const h=Object.values(schema).map(x=>x[0]),keys=Object.keys(schema);const dead=keys.map(k=>k==='id'?'DELETED':k==='reservationCode'?'BOOKING':k==='deleted'?'TRUE':'');const changes=changesFor([h,dead],[{id:'NEW',reservationCode:'BOOKING'}],schema);assert.ok(changes.every(c=>c.row===2));assert.equal(dead[keys.indexOf('id')],'DELETED')}});
 test('server derives actor, enforces roles and revisions and does not accept replacement state',()=>{let email='';let saves=0;const state=emptyState();state.members=[{email:'viewer@test.com',role:'viewer'},{email:'staff@test.com',role:'accountant'}];const svc=createService({identity:()=>email,admin:()=> 'admin@test.com',load:()=>({state,version:'v1'}),save:()=>{saves++},lock:fn=>fn()});assert.throws(()=>svc({kind:'read'}),/Sign in/);email='stranger@test.com';assert.throws(()=>svc({kind:'read'}),/access/);email='viewer@test.com';assert.throws(()=>svc({kind:'mutate',version:'v1',action:{kind:'settings',tolerance:2}}),/Read-only/);email='staff@test.com';assert.throws(()=>svc({kind:'mutate',version:'v1',action:{kind:'settings',tolerance:2}}),/Administrator/);email='admin@test.com';assert.throws(()=>svc({kind:'mutate',version:'old',action:{kind:'settings',tolerance:2}}),/changed/);assert.equal(saves,0);svc({kind:'mutate',version:'v1',action:{kind:'settings',tolerance:2}});assert.equal(saves,1);assert.throws(()=>svc({kind:'replace',state:{}}),/operation/)});
+
+test('sheet amounts round without rewriting the original financial cells on unrelated edits',()=>{
+ const data=[headers,row('ROUND',1.005)];
+ const result=mapSheetRows(data,[banks],{currency:'CAD',timeZone:'UTC'});
+ assert.equal(result.reservations[0].payout,101);
+ assert.equal(result.reservations[0].split,101);
+ const changes=changesFor(data,[{...result.reservations[0],notes:'Updated note'}],reservationSchema);
+ assert.equal(changes.length,1);assert.equal(changes[0].column,headers.indexOf('Notes'));
+});
+test('invalid sheet amounts identify the source row and column',()=>{
+ const bad=row('BAD',10);bad[headers.indexOf('Revenue')]='#VALUE!';
+ assert.throws(()=>mapSheetRows([headers,bad],[banks],{currency:'CAD',timeZone:'UTC'}),/Reservation Payouts row 2, Revenue/);
+});

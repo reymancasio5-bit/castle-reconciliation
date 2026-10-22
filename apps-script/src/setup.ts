@@ -1,8 +1,8 @@
-import {admin,identity,book,props,lock,META,metadataRequests,cellRequest} from './storage';
+import {book,props,lock,META,metadataRequests,cellRequest} from './storage';
 import {reservationSchema,bundleSchema,columnMap} from '../../lib/sheet-mapping';
-declare const DriveApp:any,Sheets:any,SpreadsheetApp:any,Utilities:any;
+declare const DriveApp:any,Sheets:any,SpreadsheetApp:any,Utilities:any,Session:any;
 export function setupWorkspace_(){return lock(()=>{
- if(identity().toLowerCase()!==admin())throw Error('Only the configured administrator may run setup');
+ const owner=Session.getEffectiveUser().getEmail().toLowerCase();
  const b=book();let backupId=props().getProperty('BACKUP_ID');
  if(!backupId){const backup=DriveApp.getFileById(b.getId()).makeCopy(b.getName()+' - before Castle setup '+new Date().toISOString());backupId=backup.getId();props().setProperty('BACKUP_ID',backupId);}
  const requests:any[]=[];
@@ -20,7 +20,7 @@ export function setupWorkspace_(){return lock(()=>{
    const initial=key==='settings'?{members:[],tolerance:1}:[];
    Sheets.Spreadsheets.batchUpdate({requests:metadataRequests(sheet,initial)},b.getId());
   }
-  if(key==='settings'){const protections=sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);const p=protections[0]||sheet.protect();p.setDescription('Castle administrators only');p.addEditor(admin());for(const editor of p.getEditors())if(editor.getEmail().toLowerCase()!==admin())p.removeEditor(editor);if(p.canDomainEdit())p.setDomainEdit(false);}
+  if(key==='settings'){const protections=sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET);const p=protections[0]||sheet.protect();p.setDescription('Castle deployment owner');p.addEditor(owner);for(const editor of p.getEditors())if(editor.getEmail().toLowerCase()!==owner)p.removeEditor(editor);if(p.canDomainEdit())p.setDomainEdit(false);}
  }
  props().setProperty('SCHEMA_VERSION','1');SpreadsheetApp.flush();return {backupId,initialized:true,spreadsheetId:b.getId()};
  });}
